@@ -1,0 +1,74 @@
+---
+kind: Pod
+apiVersion: v1
+metadata:
+  name: servicio-uno-app-argocd
+  labels:
+    app: servicio-uno-app-argocd
+spec:
+  containers:
+    - name: servicio-uno-argocd
+      image: hashicorp/http-echo
+      args:
+        - "-text=Yo soy el servicio 1 en dominio DEV | argocd"
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: servicio-uno-argocd
+spec:
+  selector:
+    app: servicio-uno-app-argocd
+  ports:
+    - port: 5678
+---
+kind: Pod
+apiVersion: v1
+metadata:
+  name: servicio-dos-app-argocd
+  labels:
+    app: servicio-dos-app-argocd
+spec:
+  containers:
+    - name: servicio-dos-argocd
+      image: hashicorp/http-echo
+      args:
+        - "-text=Yo soy el servicio 2 en dominio DEV | argocd"
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: servicio-dos-argocd
+spec:
+  selector:
+    app: servicio-dos-app-argocd
+  ports:
+    - port: 5678
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+  name: argocd-ingress
+  namespace: default
+spec:
+  rules:
+    - host: xyz.poc.com
+      http:
+        paths:
+          - backend:
+              service:
+                name: servicio-uno-argocd
+                port:
+                  number: 5678
+            path: /api/v1/poc/app-uno
+            pathType: Prefix
+          - backend:
+              service:
+                name: servicio-dos-argocd
+                port:
+                  number: 5678
+            path: /api/v1/poc/dos-argocd
+            pathType: Prefix
